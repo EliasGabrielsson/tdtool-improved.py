@@ -1,15 +1,19 @@
-import sys
-import os
+# ******************************************
+#
+# Example usage of td.py that mimic tdtool
+#
+# Developed by David Karlsson
+#             (david.karlsson.80@gmail.com)
+#
+# Released as is without any garantees on
+# functionality.
+#
+# *******************************************
 import optparse
-import time
-
+import td
 
 if __name__ == '__main__':
-    usage = """-[bdefhlnrv] [ --list ] [ --help ]
-                      [ --on device ] [ --off device ] [ --bell device ]
-                      [ --learn device ]
-                      [ --dimlevel level --dim device ]
-                      [ --raw input ]"""
+    usage = "Support one of the following arguments (except --dimlevel that is allways allowed but ignored in all other cases than combined with --dim)."
 
     parser = optparse.OptionParser(usage = usage)
     parser.add_option("-l", "--list",
@@ -38,24 +42,125 @@ if __name__ == '__main__':
 
     print options
 
+    if options.on != None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn == None:
 
-if 0:
+        #
+        #   ON
+        #
+                    
+        deviceId, deviceName = td.getDeviceIdFromStr(options.on)
+        if deviceId == -1:
+            parser.error('unknown device: ' + options.on) 
 
-    print 'getNumberOfDevices() return', getNumberOfDevices()
-    
-    print 'Id\tName'
-    for i in range(getNumberOfDevices()):
-        print getDeviceId(i), getName(i), methods(i)
+        resCode = td.turnOn(deviceId)
+        if resCode != 0:
+            res = td.getErrorString(resCode)
+        else:
+            res = 'Success'
 
-    if 0:
-        print 'Methods', methods(1)
-        print 'TurnOn', turnOn(1)
-        time.sleep(1)
-        print 'TurnOff', turnOff(1)
-        time.sleep(1)
-        print 'Dim', dim(1, 121)
-    
-    print 'LastSentCommand', lastSentCommand(1)
-    print 'LastSentValue', lastSentValue(1)
-    print 'GetErrorString', getErrorString(-2)
-    print 'AddDevice', addDevice()
+        print 'Turning on device:', deviceId, deviceName, '-', res
+
+
+
+    elif options.on == None and options.off != None and options.bell == None and options.list == False and options.dim == None and options.learn == None:
+
+        #
+        #   OFF
+        #
+                    
+        deviceId, deviceName = td.getDeviceIdFromStr(options.off)
+        if deviceId == -1:
+            parser.error('unknown device: ' + options.off) 
+
+        resCode = td.turnOff(deviceId)
+        if resCode != 0:
+            res = td.getErrorString(resCode)
+        else:
+            res = 'Success'
+
+        print 'Turning off device:', deviceId, deviceName, '-', res
+
+
+    elif options.on == None and options.off == None and options.bell != None and options.list == False and options.dim == None and options.learn == None:
+
+        #
+        #   BELL
+        #
+                    
+        deviceId, deviceName = td.getDeviceIdFromStr(options.bell)
+        if deviceId == -1:
+            parser.error('unknown device: ' + options.bell) 
+
+        resCode = td.bell(deviceId)
+        if resCode != 0:
+            res = td.getErrorString(resCode)
+        else:
+            res = 'Success'
+
+        print 'Sending bell to:', deviceId, deviceName, '-', res
+
+
+    elif options.on == None and options.off == None and options.bell == None and options.list == True and options.dim == None and options.learn == None:
+
+        #
+        #    LIST
+        #
+
+        print 'Number of devices:', td.getNumberOfDevices()
+        for i in range(td.getNumberOfDevices()):
+            cmd = td.lastSentCommand(i, readable = True)
+            if cmd == 'DIM':
+                cmd += ':' + str(td.lastSentValue(i))
+            print td.getDeviceId(i), '\t', td.getName(i), '\t\t', cmd
+        print ''
+
+    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim != None and options.dimlevel != None and options.learn == None:
+
+        #
+        #    DIM
+        #
+
+        try:
+            dimlevel = int(options.dimlevel)
+        except:
+            parser.error('--dimlevel LEVEL needs to be an integer and 0-255')
+
+        if dimlevel < 0 or dimlevel > 255:
+            parser.error('--dimlevel LEVEL needs to be an integer and 0-255')
+                    
+        deviceId, deviceName = td.getDeviceIdFromStr(options.dim)
+        if deviceId == -1:
+            parser.error('unknown device: ' + options.dim) 
+
+        resCode = td.dim(deviceId, dimlevel)
+        if resCode != 0:
+            res = td.getErrorString(resCode)
+        else:
+            res = 'Success'
+
+        print 'Dimming device:', deviceId, deviceName, 'to', dimlevel, '-', res
+
+
+    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn != None:
+
+        #
+        #   LEARN
+        #
+                    
+        deviceId, deviceName = td.getDeviceIdFromStr(options.learn)
+        if deviceId == -1:
+            parser.error('unknown device: ' + options.learn) 
+
+        resCode = td.learn(deviceId)
+        if resCode != 0:
+            res = td.getErrorString(resCode)
+        else:
+            res = 'Success'
+
+        print 'Learning device:', deviceId, deviceName, '-', res
+
+
+    else:
+        parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn")
+
+

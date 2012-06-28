@@ -1,3 +1,15 @@
+# ******************************************
+#
+# Python wrapper for libtelldus on Linux
+#
+# Developed by David Karlsson
+#             (david.karlsson.80@gmail.com)
+#
+# Released as is without any garantees on
+# functionality.
+#
+# *******************************************
+
 from ctypes import *
 from ctypes import byref
 tdlib = CDLL("libtelldus-core.so.2")
@@ -13,6 +25,19 @@ TELLSTICK_EXECUTE =       64
 TELLSTICK_UP =           128
 TELLSTICK_DOWN =         256
 TELLSTICK_STOP =         512
+
+methodsReadable = {1: 'ON',
+                   2: 'OFF',
+                   4: 'BELL',
+                   8: 'TOGGLE',
+                   16: 'DIM',
+                   32: 'LEARN',
+                   64: 'EXECUTE',
+                   128: 'UP',
+                   256: 'DOWN',
+                   512: 'STOP'}
+
+
 
 #Sensor value types
 TELLSTICK_TEMPERATURE =    1
@@ -61,6 +86,20 @@ def getNumberOfDevices():
 def getDeviceId(i):
     return tdlib.tdGetDeviceId(int(i))
 
+def getDeviceIdFromStr(s):
+    try:
+        id = int(s)
+        return getDeviceId(id), getName(id)
+    except:
+        pass
+
+    for i in range(getNumberOfDevices()):
+        if s == getName(i):
+            return getDeviceId(i), s
+
+    return -1, 'UNKNOWN'
+
+
 def getName(id):
     getNameFunc = tdlib.tdGetName
     getNameFunc.restype = c_void_p
@@ -104,7 +143,10 @@ def stop(intDeviceId):
 def learn(intDeviceId):
     return tdlib.tdLearn(intDeviceId)
 
-def lastSentCommand(intDeviceId, methodsSupported = methodsSupported):
+def lastSentCommand(intDeviceId, methodsSupported = methodsSupported, readable = False):
+    if readable:
+        return methodsReadable[tdlib.tdLastSentCommand(intDeviceId, methodsSupported)]
+
     return tdlib.tdLastSentCommand(intDeviceId, methodsSupported)
 
 def lastSentValue(intDeviceId):
@@ -112,8 +154,6 @@ def lastSentValue(intDeviceId):
     func.restype = c_char_p
 
     ret = func(intDeviceId)
-
-    print repr(ret)
     
 #Release string here?
     return ret
@@ -132,8 +172,10 @@ def getErrorString(intErrorNo):
 
 def addDevice():
     return tdlib.tdAddDevice()
-#int tdAddDevice();    
 
+#Missing support for these API calls:
+
+#int tdAddDevice();
 #
 #bool tdSetName(int intDeviceId, const char* chNewName);
 #char * tdGetProtocol(int intDeviceId);
@@ -173,3 +215,9 @@ if __name__ == '__main__':
     print 'LastSentValue', lastSentValue(1)
     print 'GetErrorString', getErrorString(-2)
     print 'AddDevice', addDevice()
+
+    print 'getDeviceIdFromStr', getDeviceIdFromStr('2')
+
+    print 'getDeviceIdFromStr', getDeviceIdFromStr('Vardagsrum')
+
+    print 'getDeviceIdFromStr', getDeviceIdFromStr('234')
