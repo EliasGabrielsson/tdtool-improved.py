@@ -11,6 +11,27 @@
 # *******************************************
 import optparse
 import td
+import time
+
+def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
+    print 'DeviceChangeEvent'
+    print 'deviceId: %x' %( deviceId )
+    print 'changeEvent: %x' %( changeEvent )
+    print 'changeType: %x' %( changeType )
+    print 'callbackId: %x' %(callbackId)
+    print 'context: %x' %(context)
+
+
+
+def deviceEvent(deviceId, method, data, callbackId, context):
+    print 'DeviceEvent'
+    print 'deviceId: 0x%x' %( deviceId )
+    print 'method: 0x%x' %( method )
+    print 'data: %s' %(data )
+    print 'callbackId: 0x%x' %( callbackId )
+    print 'context: 0x%x' %( context )
+
+
 
 if __name__ == '__main__':
     usage = "Support one of the following arguments (except --dimlevel that is allways allowed but ignored in all other cases than combined with --dim)."
@@ -37,12 +58,16 @@ if __name__ == '__main__':
     parser.add_option("-e", "--learn", dest="learn",
                       metavar = 'learn',
                       help="Sends a special learn command to devices supporting this. This is normaly devices of 'selflearning' type. 'device' could either be an integer of the device-id, or the name of the device. Both device-id and name is outputed with the --list option.")
+    parser.add_option("-t", "--event",
+                      action="store_true", default=False,
+                      help="Listen for events untill interrupted by ctrl-c")
 
     (options, args) = parser.parse_args()
 
-    print options
+    #td.init( methodsSupported = td.TELLSTICK_TURNON | td.TELLSTICK_TURNOFF ) #Application can configure to support different methods
+    td.init()
 
-    if options.on != None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn == None:
+    if options.on != None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn == None and options.event == False:
 
         #
         #   ON
@@ -62,7 +87,7 @@ if __name__ == '__main__':
 
 
 
-    elif options.on == None and options.off != None and options.bell == None and options.list == False and options.dim == None and options.learn == None:
+    elif options.on == None and options.off != None and options.bell == None and options.list == False and options.dim == None and options.learn == None and options.event == False:
 
         #
         #   OFF
@@ -81,7 +106,7 @@ if __name__ == '__main__':
         print 'Turning off device:', deviceId, deviceName, '-', res
 
 
-    elif options.on == None and options.off == None and options.bell != None and options.list == False and options.dim == None and options.learn == None:
+    elif options.on == None and options.off == None and options.bell != None and options.list == False and options.dim == None and options.learn == None and options.event == False:
 
         #
         #   BELL
@@ -100,7 +125,7 @@ if __name__ == '__main__':
         print 'Sending bell to:', deviceId, deviceName, '-', res
 
 
-    elif options.on == None and options.off == None and options.bell == None and options.list == True and options.dim == None and options.learn == None:
+    elif options.on == None and options.off == None and options.bell == None and options.list == True and options.dim == None and options.learn == None and options.event == False:
 
         #
         #    LIST
@@ -111,12 +136,12 @@ if __name__ == '__main__':
             cmd = td.lastSentCommand(i, readable = True)
             if cmd == 'DIM':
                 cmd += ':' + str(td.lastSentValue(i))
-            print td.getDeviceId(i), '\t', td.getName(i), '\t\t', cmd
+            print td.getDeviceId(i), '\t', td.getName(i), '\t\t', cmd, '\t\t', td.methods(i, readable = True)
         print ''
 
-    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim != None and options.dimlevel != None and options.learn == None:
-
-        #
+    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim != None and options.dimlevel != None and options.learn == None and options.event == False:
+ 
+         #
         #    DIM
         #
 
@@ -141,7 +166,7 @@ if __name__ == '__main__':
         print 'Dimming device:', deviceId, deviceName, 'to', dimlevel, '-', res
 
 
-    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn != None:
+    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn != None and options.event == False:
 
         #
         #   LEARN
@@ -159,8 +184,30 @@ if __name__ == '__main__':
 
         print 'Learning device:', deviceId, deviceName, '-', res
 
+    elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn == None and options.event == True:
+
+        #
+        #  Event
+        #
+        
+        res = td.registerDeviceEvent(deviceEvent)
+        print 'Register device event returned:', res
+
+#        res = td.registerDeviceChangedEvent(deviceChangeEvent)
+#        print 'Register device changed event returned:', res
+
+        print 'Event handlers registered now waiting for events. Exit with ctrl-c.'
+            
+        try:
+            while(1):
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print 'KeyboardInterrupt received, exiting'
 
     else:
-        parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn")
+        parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn, -event")
+
+    td.close()
+
 
 
