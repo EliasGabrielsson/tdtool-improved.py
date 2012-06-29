@@ -158,7 +158,7 @@ def lastSentCommand(intDeviceId, methodsSupported = None, readable = False):
         methodsSupported = methodsSupportedDefault
 
     if readable:
-        return methodsReadable[tdlib.tdLastSentCommand(intDeviceId, methodsSupported)]
+        return methodsReadable.get(tdlib.tdLastSentCommand(intDeviceId, methodsSupported), 'UNKNOWN')
 
     return tdlib.tdLastSentCommand(intDeviceId, methodsSupported)
 
@@ -372,17 +372,19 @@ if __name__ == '__main__':
 
         print 'getDeviceIdFromStr', getDeviceIdFromStr('234')
 
-    print repr(setName(getDeviceId(1), 'Test'))
-    print getProtocol(getDeviceId(1))
-    print getModel(getDeviceId(1))
-    print repr(getDeviceParameter(getDeviceId(1), "unit", ""))
-    print repr(getDeviceParameter(getDeviceId(1), "house", ""))
+        print repr(setName(getDeviceId(1), 'Test'))
+        print getProtocol(getDeviceId(1))
+        print getModel(getDeviceId(1))
+        print repr(getDeviceParameter(getDeviceId(1), "unit", ""))
+        print repr(getDeviceParameter(getDeviceId(1), "house", ""))
     
 
-    cb = registerDeviceEvent(deviceEvent)
-    print cb
-    print unregisterCallback(3)
+        cb = registerDeviceEvent(deviceEvent)
+        print cb
+        print unregisterCallback(3)
 
-    time.sleep(20)
+        time.sleep(20)
+
+    print methods(3124, readable = True)
 
     print 'Done with unit test'
