@@ -13,24 +13,22 @@ import optparse
 import td
 import time
 
-def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
-    print 'DeviceChangeEvent'
-    print 'deviceId: %x' %( deviceId )
-    print 'changeEvent: %x' %( changeEvent )
-    print 'changeType: %x' %( changeType )
-    print 'callbackId: %x' %(callbackId)
-    print 'context: %x' %(context)
-
-
-
-def deviceEvent(deviceId, method, data, callbackId, context):
+def myDeviceEvent(deviceId, method, data, callbackId):
     print 'DeviceEvent'
     print 'deviceId: 0x%x' %( deviceId )
     print 'method: 0x%x' %( method )
     print 'data: %s' %(data )
     print 'callbackId: 0x%x' %( callbackId )
-    print 'context: 0x%x' %( context )
+    
 
+
+
+def myDeviceChangeEvent(deviceId, changeEvent, changeType, callbackId):
+    print 'DeviceChangeEvent'
+    print 'deviceId: %x' %( deviceId )
+    print 'changeEvent: %x' %( changeEvent )
+    print 'changeType: %x' %( changeType )
+    print 'callbackId: %x' %(callbackId)
 
 
 if __name__ == '__main__':
@@ -65,7 +63,7 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     #td.init( methodsSupported = td.TELLSTICK_TURNON | td.TELLSTICK_TURNOFF ) #Application can configure to support different methods
-    td.init()
+#    td.init()
 
     if options.on != None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn == None and options.event == False:
 
@@ -190,11 +188,11 @@ if __name__ == '__main__':
         #  Event
         #
         
-        res = td.registerDeviceEvent(deviceEvent)
+        res = td.registerDeviceEvent(myDeviceEvent)
         print 'Register device event returned:', res
 
-#        res = td.registerDeviceChangedEvent(deviceChangeEvent)
-#        print 'Register device changed event returned:', res
+        res = td.registerDeviceChangedEvent(myDeviceChangeEvent)
+        print 'Register device changed event returned:', res
 
         print 'Event handlers registered now waiting for events. Exit with ctrl-c.'
             

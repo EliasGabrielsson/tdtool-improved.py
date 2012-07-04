@@ -9,10 +9,19 @@
 # functionality.
 #
 # *******************************************
+import platform
+import time
+from ctypes import c_int, c_ubyte, c_void_p, c_char_p, POINTER, string_at
 
-from ctypes import *
-from ctypes import byref
-tdlib = CDLL("libtelldus-core.so.2")
+#platform specific imports:
+if (platform.system() == 'Windows'):
+    #Windows
+    from ctypes import windll, WINFUNCTYPE
+    tdlib = windll.LoadLibrary('TelldusCore.dll') #import our library
+else:
+    #Linux
+    from ctypes import cdll, CFUNCTYPE
+    tdlib = cdll.LoadLibrary('libtelldus-core.so.2') #import our library
 
 #Device methods
 TELLSTICK_TURNON =         1
@@ -253,138 +262,214 @@ def init(defaultMethods = TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL 
 
     methodsSupportedDefault = defaultMethods
 
-    tdlib.tdInit()
+    #tdlib.tdInit()
 
 def close():
     tdlib.tdClose()
 
 #Callback fro DeviceEvent
-DEVICEEVENTFUNC = CFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
+#DEVICEEVENTFUNC = CFUNCTYPE(None, c_int, c_int, POINTER(c_ubyte), c_int, c_void_p)
 
-#This is a prototype of Device Event function that should be passed to
-# registerDeviceEvent function
+
+if (platform.system() == 'Windows'):
+    DEVICEFUNC = WINFUNCTYPE(None, c_int, c_int, POINTER(c_ubyte), c_int, c_void_p)
+    DEVICECHANGEFUNC = WINFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
+    SENSORFUNC = WINFUNCTYPE(None, POINTER(c_ubyte), POINTER(c_ubyte), c_int, c_int, POINTER(c_ubyte), c_int, c_int, c_void_p)
+else:
+    DEVICEFUNC = CFUNCTYPE(None, c_int, c_int, POINTER(c_ubyte), c_int, c_void_p)
+    DEVICECHANGEFUNC = CFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
+    SENSORFUNC = CFUNCTYPE(None, POINTER(c_ubyte), POINTER(c_ubyte), c_int, c_int, POINTER(c_ubyte), c_int, c_int, c_void_p)
+
+
+
+
+callbacks = {'lastAdd': 0,
+             'deviceEvent': {},
+             'deviceChangeEvent': {},
+             'sensorEvent': {}
+             }
+
 def deviceEvent(deviceId, method, data, callbackId, context):
     print 'DeviceEvent'
-    print 'deviceId:', deviceId
-    print 'method:', method
-    print 'data:', data
-    print 'callbackId:', callbackId
-    print 'context:', context
 
-def registerDeviceEvent(func):
-    deviceEvent_func = DEVICEEVENTFUNC(func)
-    
-    return tdlib.tdRegisterDeviceEvent(deviceEvent_func, c_void_p(0))
+    if 0:
+        print 'deviceId:', deviceId
+        print 'method:', method
+        print 'data:', data
+        print 'callbackId:', callbackId
+        print 'context:', context
 
-#Callback for DeviceChangeEvent
-DEVICECHANGEEVENTFUNC = CFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
+    for f in callbacks['deviceEvent']:
+        try:
+            print f
+            f(deviceId, method, data, callbackId)
+        except:
+            print 'Error calling registered callback'
+            raise
 
-#This is a prototype of Device Change Event function that should be passed to
-# registerDeviceEvent function
 def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
     print 'DeviceChangeEvent'
-    print 'deviceId:', deviceId
-    print 'changeEvent:', changeEvent
-    print 'changeType:', changeType
-    print 'callbackId:', callbackId
+    
+    if 0:
+        print 'deviceId:', deviceId
+        print 'changeEvent:', changeEvent
+        print 'changeType:', changeType
+        print 'callbackId:', callbackId
 
+    for f in callbacks['deviceChangeEvent']:
+        try:
+            print f
+            f(deviceId, method, data, callbackId)
+        except:
+            print 'Error calling registered callback'
+            raise
+
+
+def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, context):
+    print 'SensorEvent'
+
+    if 0:
+        print 'protocol:', protocol
+        print 'model:', model
+        print 'id:', id
+        print 'datatype:', dataType
+        print 'value:', value
+        print 'timestamp:', timestamp
+        print 'callbackId:', callbackId
+        print 'context:', context
+
+    for f in callbacks['sensorEvent']:
+        try:
+            f(deviceId, method, data, callbackId)
+        except:
+            print 'Error calling registered callback'
+
+
+device_func = DEVICEFUNC(deviceEvent)
+tdlib.tdRegisterDeviceEvent(device_func, 0)
+
+deviceChange_func = DEVICECHANGEFUNC(deviceChangeEvent)
+tdlib.tdRegisterDeviceChangeEvent(deviceChange_func, 0)
+
+sensor_func = SENSORFUNC(sensorEvent)
+tdlib.tdRegisterSensorEvent(sensor_func, 0)
+
+tdlib.tdInit()
+
+def registerEvent(func, eventType):
+
+    global callbacks
+    callbacks[eventType][callbacks['lastAdd']] = func
+
+    id = callbacks['lastAdd']
+    callbacks['lastAdd'] += 1
+
+    print callbacks
+
+    return id
+
+def registerDeviceEvent(func):
+    return registerEvent(func, 'deviceEvent')
 
 def registerDeviceChangedEvent(func):
+    return registerEvent(func, 'deviceChangeEvent')
     deviceChangeEvent_func = DEVICECHANGEEVENTFUNC(func)
 
     return tdlib.tdRegisterDeviceChangeEvent(deviceChangeEvent_func, c_void_p(0))
 
-
-#Callback for 
-
-
-
-#Callback for SensorEvent
-SENSOREVENTFUNC = CFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
-
-
-#This is a prototype of Device Change Event function that should be passed to
-# registerDeviceEvent function
-def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, context):
-    print 'SensorEvent'
-    print 'protocol:', protocol
-    print 'model:', model
-    print 'id:', id
-    print 'datatype:', dataType
-    print 'value:', value
-    print 'teimstamp:', timestamp
-    print 'callbackId:', callbackId
-    print 'context:', context
-
-
 def registerSensorEvent(func):
-    sensorEvent_func = SENSOREVENTFUNC(func)
-    return tdlib.tdRegisterSensorEvent(sensorEvent_func, c_void_p(0))
+    return registerEvent(func, 'sensorEvent')
     
 
 def unregisterCallback(callbackId):
-    return tdlib.tdUnregisterCallback(callbackId)
+    global callbacks
+    
+    if callbackId in callbacks['deviceEvent']:
+        del callbacks['deviceEvent'][callbackId]
+    elif callbackId in callbacks['deviceChangeEvent']:
+        del callbacks['deviceChangeEvent'][callbackId]
+    elif callbackId in callbacks['sensorEvent']:
+        del callbacks['sensorEvent'][callbackId]
+
+
+def setProtocol(intDeviceId, strProtocol):
+    return tdlib.tdSetProtocol(intDeviceId, strProtocol)
+
+def setModel(intDeviceId, strModel):
+    return tdlib.tdSetModel(intDeviceId, strModel)
+
+def setDeviceParameter(intDeviceId, strName, strValue):
+    return tdlib.tdSetDeviceParameter(intDeviceId, strName, strValue)
+
+#Completly untested calls
+def connectTellStickController(vid, pid, serial):
+    tdlib.tdConnectTellStickController(vid, pid, serial)
+
+def disconnectTellStickController(vid, pid, serial):
+    tdlib.tdDisConnectTellStickController(vid, pid, serial)
 
 
 #Missing support for these API calls:
 #
 #int tdRegisterRawDeviceEvent( TDRawDeviceEvent eventFunction, void *context );
 #int tdRegisterControllerEvent( TDControllerEvent eventFunction, void *context);
+#int tdSendRawCommand(const char *command, int reserved);    
 
-
-#bool tdSetProtocol(int intDeviceId, const char* strProtocol);
-#bool tdSetModel(int intDeviceId, const char *intModel);
-#bool tdSetDeviceParameter(int intDeviceId, const char *strName, const char* strValue);
-
-#int tdSendRawCommand(const char *command, int reserved);
-
-#void tdConnectTellStickController(int vid, int pid, const char *serial);
-#void tdDisconnectTellStickController(int vid, int pid, const char *serial);
-    
 
 if __name__ == '__main__':
     import time
 
     init()
 
-    print 'getNumberOfDevices() return', getNumberOfDevices()
+    print 'getNumberOfDevices', getNumberOfDevices()
     
     print 'Id\tName'
     for i in range(getNumberOfDevices()):
         print getDeviceId(i), getName(i), methods(i)
 
-    if 0:
-        print 'Methods', methods(1)
-        print 'TurnOn', turnOn(1)
-        time.sleep(1)
-        print 'TurnOff', turnOff(1)
-        time.sleep(1)
-        print 'Dim', dim(1, 121)
+
+    print 'Methods(1)', methods(1)
+    print 'methods(1, readable=True)', methods(1, readable = True)
+    print 'methods(3124, readable=True)', methods(3124, readable = True)
+    print 'TurnOn(1)', turnOn(1)
+    time.sleep(1)
+    print 'TurnOff(1)', turnOff(1)
+    time.sleep(1)
+    print 'Dim (1, 121)', dim(1, 121)
     
-        print 'LastSentCommand', lastSentCommand(1)
-        print 'LastSentValue', lastSentValue(1)
-        print 'GetErrorString', getErrorString(-2)
-        print 'AddDevice', addDevice()
+    print 'LastSentCommand(1)', lastSentCommand(1)
+    print 'LastSentValue(1)', lastSentValue(1)
+    print 'GetErrorString(-2)', getErrorString(-2)
         
-        print 'getDeviceIdFromStr', getDeviceIdFromStr('2')
-        
-        print 'getDeviceIdFromStr', getDeviceIdFromStr('Vardagsrum')
+    print 'getDeviceIdFromStr', getDeviceIdFromStr('2')    
+    print 'getDeviceIdFromStr', getDeviceIdFromStr('Vardagsrum')
+    print 'getDeviceIdFromStr', getDeviceIdFromStr('234')
 
-        print 'getDeviceIdFromStr', getDeviceIdFromStr('234')
 
-        print repr(setName(getDeviceId(1), 'Test'))
-        print getProtocol(getDeviceId(1))
-        print getModel(getDeviceId(1))
-        print repr(getDeviceParameter(getDeviceId(1), "unit", ""))
-        print repr(getDeviceParameter(getDeviceId(1), "house", ""))
+    devId = addDevice()
+    if devId > 0:
+        print 'AddDevice', devId
+        print 'setName', repr(setName(devId, 'Test'))
+        print 'getName', repr(getName(devId))
+        print 'getProtocol', getProtocol(devId)
+        print 'setProtocol', setProtocol(devId, 'arctech')
+        print 'getProtocol', getProtocol(devId)
+
+        print 'getModel', getModel(devId)
+        print 'setModel', setModel(devId, 'selflearning-switch')
+        print 'getModel', getModel(devId)
+
+        print 'getDeviceParameter (unit)', repr(getDeviceParameter(devId, "unit", ""))
+        print 'setDeviceParameter (unit)', repr(setDeviceParameter(devId, 'unit', '123'))                                       
+        print 'getDeviceParameter (unit)', repr(getDeviceParameter(devId, "unit", ""))
+
+        print 'getDeviceParameter (house)', repr(getDeviceParameter(devId, "house", ""))
+        print 'setDeviceParameter (house)', repr(setDeviceParameter(devId, "house", "321"))
+        print 'getDeviceParameter (house)', repr(getDeviceParameter(devId, "house", ""))
     
+        print 'Remove Device', removeDevice(devId)
 
-        cb = registerDeviceEvent(deviceEvent)
-        print cb
-        print unregisterCallback(3)
-
-        time.sleep(20)
-
-    print methods(3124, readable = True)
+    else:
+        print 'addDevice returned error', getErrorString(devId)
 
     print 'Done with unit test'
