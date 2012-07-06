@@ -272,13 +272,13 @@ def close():
 
 
 if (platform.system() == 'Windows'):
-    DEVICEFUNC = WINFUNCTYPE(None, c_int, c_int, POINTER(c_ubyte), c_int, c_void_p)
+    DEVICEFUNC = WINFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
     DEVICECHANGEFUNC = WINFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
-    SENSORFUNC = WINFUNCTYPE(None, POINTER(c_ubyte), POINTER(c_ubyte), c_int, c_int, POINTER(c_ubyte), c_int, c_int, c_void_p)
+    SENSORFUNC = WINFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
 else:
-    DEVICEFUNC = CFUNCTYPE(None, c_int, c_int, POINTER(c_ubyte), c_int, c_void_p)
+    DEVICEFUNC = CFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
     DEVICECHANGEFUNC = CFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
-    SENSORFUNC = CFUNCTYPE(None, POINTER(c_ubyte), POINTER(c_ubyte), c_int, c_int, POINTER(c_ubyte), c_int, c_int, c_void_p)
+    SENSORFUNC = CFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
 
 
 
@@ -299,7 +299,8 @@ def deviceEvent(deviceId, method, data, callbackId, context):
         print 'callbackId:', callbackId
         print 'context:', context
 
-    for f in callbacks['deviceEvent']:
+    for key in callbacks['deviceEvent']:
+        f = callbacks['deviceEvent'][key]
         try:
             print f
             f(deviceId, method, data, callbackId)
@@ -316,7 +317,8 @@ def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
         print 'changeType:', changeType
         print 'callbackId:', callbackId
 
-    for f in callbacks['deviceChangeEvent']:
+    for key in callbacks['deviceChangeEvent']:
+        f = callbacks['deviceChangeEvent'][key]
         try:
             print f
             f(deviceId, method, data, callbackId)
@@ -338,7 +340,8 @@ def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, con
         print 'callbackId:', callbackId
         print 'context:', context
 
-    for f in callbacks['sensorEvent']:
+    for key in callbacks['sensorEvent']:
+        f = callbacks['sensorEvent'][key]
         try:
             f(deviceId, method, data, callbackId)
         except:
