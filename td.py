@@ -367,8 +367,6 @@ def registerEvent(func, eventType):
     id = callbacks['lastAdd']
     callbacks['lastAdd'] += 1
 
-    print callbacks
-
     return id
 
 def registerDeviceEvent(func):
