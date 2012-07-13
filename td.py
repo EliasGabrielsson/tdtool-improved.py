@@ -98,12 +98,13 @@ def getDeviceId(i):
 def getDeviceIdFromStr(s):
     try:
         id = int(s)
-        return getDeviceId(id), getName(id)
+        devId = getDeviceId(devId)
+        return devId, getName(devId)
     except:
         pass
 
     for i in range(getNumberOfDevices()):
-        if s == getName(i):
+        if s == getName(getDeviceId(i)):
             return getDeviceId(i), s
 
     return -1, 'UNKNOWN'
@@ -256,7 +257,8 @@ def getDeviceParameter(intDeviceId, strName, defaultValue):
 
     return s
 
-def init(defaultMethods = TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL | TELLSTICK_TOGGLE | TELLSTICK_DIM | TELLSTICK_LEARN):
+def init(defaultMethods = 0):
+#defaultMethods could be one or many from: TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL | TELLSTICK_TOGGLE | TELLSTICK_DIM | TELLSTICK_LEARN | TELLSTICK_EXECUTE | TELLSTICK_UP | TELLSTICK_DOWN | TELLSTICK_STOP
 
     global methodsSupportedDefault
 
@@ -267,32 +269,30 @@ def init(defaultMethods = TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL 
 def close():
     tdlib.tdClose()
 
-#Callback fro DeviceEvent
-#DEVICEEVENTFUNC = CFUNCTYPE(None, c_int, c_int, POINTER(c_ubyte), c_int, c_void_p)
-
-
 if (platform.system() == 'Windows'):
     DEVICEFUNC = WINFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
     DEVICECHANGEFUNC = WINFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
     SENSORFUNC = WINFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
+    RAWDEVICEFUNC = WINFUNCTYPE(None, c_char_p, c_int, c_int, c_void_p)
+
 else:
     DEVICEFUNC = CFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
     DEVICECHANGEFUNC = CFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
     SENSORFUNC = CFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
-
+    RAWDEVICEFUNC = CFUNCTYPE(None, c_char_p, c_int, c_int, c_void_p)
 
 
 
 callbacks = {'lastAdd': 0,
              'deviceEvent': {},
              'deviceChangeEvent': {},
-             'sensorEvent': {}
+             'sensorEvent': {},
+             'rawDeviceEvent': {}
              }
 
 def deviceEvent(deviceId, method, data, callbackId, context):
-    print 'DeviceEvent'
-
     if 0:
+        print 'DeviceEvent'
         print 'deviceId:', deviceId
         print 'method:', method
         print 'data:', data
@@ -309,9 +309,8 @@ def deviceEvent(deviceId, method, data, callbackId, context):
             raise
 
 def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
-    print 'DeviceChangeEvent'
-    
     if 0:
+        print 'DeviceChangeEvent'
         print 'deviceId:', deviceId
         print 'changeEvent:', changeEvent
         print 'changeType:', changeType
@@ -321,16 +320,15 @@ def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
         f = callbacks['deviceChangeEvent'][key]
         try:
             print f
-            f(deviceId, method, data, callbackId)
+            f(deviceId, changeEvent, changeType, callbackId)
         except:
             print 'Error calling registered callback'
             raise
 
 
 def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, context):
-    print 'SensorEvent'
-
     if 0:
+        print 'SensorEvent'
         print 'protocol:', protocol
         print 'model:', model
         print 'id:', id
@@ -347,6 +345,20 @@ def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, con
         except:
             print 'Error calling registered callback'
 
+def rawDeviceEvent(data, controllerId, callbackId, context):
+    if 0:
+        print 'RawDeviceEvent'
+        print 'data:', data
+        print 'controllerId:', controllerId
+        print 'callbackId:', callbackId
+        print 'context:', context
+
+    for key in callbacks['rawDeviceEvent']:
+        f = callbacks['rawDeviceEvent'][key]
+        try:
+            f(data, controllerId, callbackId)
+        except:
+            print 'Error calling registered callback'
 
 device_func = DEVICEFUNC(deviceEvent)
 tdlib.tdRegisterDeviceEvent(device_func, 0)
@@ -356,6 +368,9 @@ tdlib.tdRegisterDeviceChangeEvent(deviceChange_func, 0)
 
 sensor_func = SENSORFUNC(sensorEvent)
 tdlib.tdRegisterSensorEvent(sensor_func, 0)
+
+rawDevice_func = RAWDEVICEFUNC(rawDeviceEvent)
+tdlib.tdRegisterRawDeviceEvent(rawDevice_func, 0)
 
 tdlib.tdInit()
 
@@ -374,13 +389,12 @@ def registerDeviceEvent(func):
 
 def registerDeviceChangedEvent(func):
     return registerEvent(func, 'deviceChangeEvent')
-    deviceChangeEvent_func = DEVICECHANGEEVENTFUNC(func)
-
-    return tdlib.tdRegisterDeviceChangeEvent(deviceChangeEvent_func, c_void_p(0))
 
 def registerSensorEvent(func):
     return registerEvent(func, 'sensorEvent')
     
+def registerRawDeviceEvent(func):
+    return registerEvent(func, 'rawDeviceEvent')
 
 def unregisterCallback(callbackId):
     global callbacks
@@ -412,7 +426,6 @@ def disconnectTellStickController(vid, pid, serial):
 
 #Missing support for these API calls:
 #
-#int tdRegisterRawDeviceEvent( TDRawDeviceEvent eventFunction, void *context );
 #int tdRegisterControllerEvent( TDControllerEvent eventFunction, void *context);
 #int tdSendRawCommand(const char *command, int reserved);    
 
@@ -420,13 +433,14 @@ def disconnectTellStickController(vid, pid, serial):
 if __name__ == '__main__':
     import time
 
-    init()
+    init(defaultMethods = TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL | TELLSTICK_TOGGLE | TELLSTICK_DIM | TELLSTICK_LEARN)
 
     print 'getNumberOfDevices', getNumberOfDevices()
     
     print 'Id\tName'
     for i in range(getNumberOfDevices()):
-        print getDeviceId(i), getName(i), methods(i)
+        devId = getDeviceId(i)
+        print devId, getName(devId), methods(devId)
 
 
     print 'Methods(1)', methods(1)

@@ -30,6 +30,13 @@ def myDeviceChangeEvent(deviceId, changeEvent, changeType, callbackId):
     print 'changeType: %x' %( changeType )
     print 'callbackId: %x' %(callbackId)
 
+def myRawDeviceEvent(data, controllerId, callbackId):
+    print 'RawDeviceEvent'
+    print 'data:', data
+    print 'controllerId:', controllerId
+    print 'callbackId:', callbackId
+
+
 
 if __name__ == '__main__':
     usage = "Support one of the following arguments (except --dimlevel that is allways allowed but ignored in all other cases than combined with --dim)."
@@ -193,6 +200,9 @@ if __name__ == '__main__':
 
         res = td.registerDeviceChangedEvent(myDeviceChangeEvent)
         print 'Register device changed event returned:', res
+
+        res = td.registerRawDeviceEvent(myRawDeviceEvent)
+        print 'Register raw device event returned:', res
 
         print 'Event handlers registered now waiting for events. Exit with ctrl-c.'
             
