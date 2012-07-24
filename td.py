@@ -302,11 +302,9 @@ def deviceEvent(deviceId, method, data, callbackId, context):
     for key in callbacks['deviceEvent']:
         f = callbacks['deviceEvent'][key]
         try:
-            print f
             f(deviceId, method, data, callbackId)
         except:
-            print 'Error calling registered callback'
-            raise
+            print 'Error calling registered callback for deviceEvent'
 
 def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
     if 0:
@@ -319,11 +317,9 @@ def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
     for key in callbacks['deviceChangeEvent']:
         f = callbacks['deviceChangeEvent'][key]
         try:
-            print f
             f(deviceId, changeEvent, changeType, callbackId)
         except:
-            print 'Error calling registered callback'
-            raise
+            print 'Error calling registered callback for deviceChangeEvent'
 
 
 def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, context):
@@ -341,9 +337,9 @@ def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, con
     for key in callbacks['sensorEvent']:
         f = callbacks['sensorEvent'][key]
         try:
-            f(deviceId, method, data, callbackId)
+            f(protocol, model, id, dataType, value, timestamp, callbackId)
         except:
-            print 'Error calling registered callback'
+            print 'Error calling registered callback for sensorEvent'
 
 def rawDeviceEvent(data, controllerId, callbackId, context):
     if 0:
@@ -358,7 +354,7 @@ def rawDeviceEvent(data, controllerId, callbackId, context):
         try:
             f(data, controllerId, callbackId)
         except:
-            print 'Error calling registered callback'
+            print 'Error calling registered callback for rawDeviceEvent'
 
 device_func = DEVICEFUNC(deviceEvent)
 tdlib.tdRegisterDeviceEvent(device_func, 0)
@@ -405,6 +401,8 @@ def unregisterCallback(callbackId):
         del callbacks['deviceChangeEvent'][callbackId]
     elif callbackId in callbacks['sensorEvent']:
         del callbacks['sensorEvent'][callbackId]
+    elif callbackId in callbacks['rawDeviceEvent']:
+        del callbacks['rawDeviceEvent'][callbackId]
 
 
 def setProtocol(intDeviceId, strProtocol):
