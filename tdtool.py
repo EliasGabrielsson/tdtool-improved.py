@@ -14,28 +14,26 @@ import td
 import time
 
 def myDeviceEvent(deviceId, method, data, callbackId):
-    print 'DeviceEvent'
-    print 'deviceId: 0x%x' %( deviceId )
-    print 'method: 0x%x' %( method )
-    print 'data: %s' %(data )
-    print 'callbackId: 0x%x' %( callbackId )
-    
-
-
+    print '%d: DeviceEvent Device: %d - %s' %( time.time(), deviceId, td.getName(deviceId) )
+    print '  method: %d - %s, data: %s' %( method, td.methodsReadable.get(method, 'Unknown' ), data )
 
 def myDeviceChangeEvent(deviceId, changeEvent, changeType, callbackId):
-    print 'DeviceChangeEvent'
-    print 'deviceId: %x' %( deviceId )
-    print 'changeEvent: %x' %( changeEvent )
-    print 'changeType: %x' %( changeType )
-    print 'callbackId: %x' %(callbackId)
+    print '%d: DeviceChangeEvent Device: %d - %s' %(time.time(), deviceId, td.getName(deviceId))
+    print '  changeEvent: %d' %( changeEvent )
+    print '  changeType: %d' %( changeType )
 
 def myRawDeviceEvent(data, controllerId, callbackId):
-    print 'RawDeviceEvent'
-    print 'data:', data
-    print 'controllerId:', controllerId
-    print 'callbackId:', callbackId
+    print '%d: RawDeviceEvent: %s' %(time.time(), data)
+    print '  controllerId:', controllerId
 
+def mySensorEvent(protocol, model, id, dataType, value, timestamp, callbackId):
+    print '%d: SensorEvent' %(time.time())
+    print '  protocol: %s' %(protocol)
+    print '  model: %s' %(model)
+    print '  id: %d' %(id)
+    print '  dataType: %d' %(dataType)
+    print '  value: %s' %(value)
+    print '  timestamp: %d' %(timestamp)
 
 
 if __name__ == '__main__':
@@ -203,6 +201,9 @@ if __name__ == '__main__':
 
         res = td.registerRawDeviceEvent(myRawDeviceEvent)
         print 'Register raw device event returned:', res
+
+        res = td.registerSensorEvent(mySensorEvent)
+        print 'Register sensor event returned:', res
 
         print 'Event handlers registered now waiting for events. Exit with ctrl-c.'
             
