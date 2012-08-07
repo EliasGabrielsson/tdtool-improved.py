@@ -52,6 +52,9 @@ methodsReadable = {1: 'ON',
 TELLSTICK_TEMPERATURE =    1
 TELLSTICK_HUMIDITY =       2
 
+sensorValueTypeReadable = {TELLSTICK_TEMPERATURE: 'Temperature',
+                           TELLSTICK_HUMIDITY: 'Humidity'}
+
 #Error codes
 TELLSTICK_SUCCESS =                       0
 TELLSTICK_ERROR_NOT_FOUND =              -1
@@ -141,9 +144,6 @@ def turnOn(intDeviceId):
 
 def turnOff(intDeviceId):
     return tdlib.tdTurnOff(intDeviceId)
-
-def turnOn(intDeviceId):
-    return tdlib.tdTurnOn(intDeviceId)
 
 def bell(intDeviceId):
     return tdlib.tdBell(intDeviceId)
