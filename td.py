@@ -13,15 +13,34 @@ import platform
 import time
 from ctypes import c_int, c_ubyte, c_void_p, c_char_p, POINTER, string_at
 
-#platform specific imports:
+debug = False
+
+#platform specific imports and CFUNC definitions:
 if (platform.system() == 'Windows'):
     #Windows
     from ctypes import windll, WINFUNCTYPE
-    tdlib = windll.LoadLibrary('TelldusCore.dll') #import our library
+    tdlib = windll.LoadLibrary('TelldusCore.dll')
+
+    DEVICEFUNC = WINFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
+    DEVICECHANGEFUNC = WINFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
+    SENSORFUNC = WINFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
+    RAWDEVICEFUNC = WINFUNCTYPE(None, c_char_p, c_int, c_int, c_void_p)
+
 else:
+    if (platform.system() == 'Darwin'):
+    #Mac
+        from ctypes import cdll, CFUNCTYPE
+        tdlib = cdll.LoadLibrary('/Library/Frameworks/TelldusCore.framework/TelldusCore')
+    else:
     #Linux
-    from ctypes import cdll, CFUNCTYPE
-    tdlib = cdll.LoadLibrary('libtelldus-core.so.2') #import our library
+        from ctypes import cdll, CFUNCTYPE
+        tdlib = cdll.LoadLibrary('libtelldus-core.so.2')
+
+    DEVICEFUNC = CFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
+    DEVICECHANGEFUNC = CFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
+    SENSORFUNC = CFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
+    RAWDEVICEFUNC = CFUNCTYPE(None, c_char_p, c_int, c_int, c_void_p)
+
 
 #Device methods
 TELLSTICK_TURNON =         1
@@ -92,6 +111,11 @@ TELLSTICK_CHANGE_FIRMWARE =               6
 
 methodsSupportedDefault = 0
 
+_callbackFuncs = {}
+
+
+
+
 def getNumberOfDevices():
     return tdlib.tdGetNumberOfDevices()
 
@@ -121,7 +145,8 @@ def getName(id):
     cp = c_char_p(vp)
     s = cp.value
     
-    tdlib.tdReleaseString(vp)
+    if (platform.system() != 'Darwin'): #Workaround, mac crashes on next line
+        tdlib.tdReleaseString(vp)
 
     return s
 
@@ -189,7 +214,8 @@ def getErrorString(intErrorNo):
     cp = c_char_p(vp)
     s = cp.value
     
-    tdlib.tdReleaseString(vp)
+    if (platform.system() != 'Darwin'): #Workaround, mac crashes on nest line
+        tdlib.tdReleaseString(vp)
 
     return s
 
@@ -218,7 +244,8 @@ def getProtocol(intDeviceId):
     cp = c_char_p(vp)
     s = cp.value
     
-    tdlib.tdReleaseString(vp)
+    if (platform.system() != 'Darwin'): #Workaround
+        tdlib.tdReleaseString(vp)
 
     return s
 
@@ -233,27 +260,8 @@ def getModel(intDeviceId):
     cp = c_char_p(vp)
     s = cp.value
     
-    tdlib.tdReleaseString(vp)
-
-    return s
-
-def getDeviceParameter(intDeviceId, strName, defaultValue):
-    if not isinstance(intDeviceId, int):
-        raise ValueError('intDeviceId needs to be an integer')
-    if not isinstance(strName, str):
-        raise ValueError('strName needs to be a str')
-    if not isinstance(defaultValue, str):
-        raise ValueError('defaultValue needs to be a str')
-
-
-    tdGetDeviceParameterFunc = tdlib.tdGetDeviceParameter
-    tdGetDeviceParameterFunc.restype = c_void_p
-
-    vp = tdGetDeviceParameterFunc(intDeviceId, strName, defaultValue)
-    cp = c_char_p(vp)
-    s = cp.value
-    
-    tdlib.tdReleaseString(vp)
+    if (platform.system() != 'Darwin'): #Workaround:
+        tdlib.tdReleaseString(vp)
 
     return s
 
@@ -264,22 +272,22 @@ def init(defaultMethods = 0):
 
     methodsSupportedDefault = defaultMethods
 
-    #tdlib.tdInit()
+
+    if (platform.system() == 'Windows'):
+    #Windows
+        tdlib = windll.LoadLibrary('TelldusCore.dll') #import our library
+    else:
+    #Linux
+        tdlib = cdll.LoadLibrary('libtelldus-core.so.2') #import our library
+
+    tdlib.tdInit()
+
+
+
 
 def close():
     tdlib.tdClose()
 
-if (platform.system() == 'Windows'):
-    DEVICEFUNC = WINFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
-    DEVICECHANGEFUNC = WINFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
-    SENSORFUNC = WINFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
-    RAWDEVICEFUNC = WINFUNCTYPE(None, c_char_p, c_int, c_int, c_void_p)
-
-else:
-    DEVICEFUNC = CFUNCTYPE(None, c_int, c_int, c_char_p, c_int, c_void_p)
-    DEVICECHANGEFUNC = CFUNCTYPE(None, c_int, c_int, c_int, c_int, c_void_p)
-    SENSORFUNC = CFUNCTYPE(None, c_char_p, c_char_p, c_int, c_int, c_char_p, c_int, c_int, c_void_p)
-    RAWDEVICEFUNC = CFUNCTYPE(None, c_char_p, c_int, c_int, c_void_p)
 
 
 
@@ -291,7 +299,7 @@ callbacks = {'lastAdd': 0,
              }
 
 def deviceEvent(deviceId, method, data, callbackId, context):
-    if 0:
+    if debug:
         print 'DeviceEvent'
         print 'deviceId:', deviceId
         print 'method:', method
@@ -305,9 +313,11 @@ def deviceEvent(deviceId, method, data, callbackId, context):
             f(deviceId, method, data, callbackId)
         except:
             print 'Error calling registered callback for deviceEvent'
+            if debug:
+                raise
 
 def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
-    if 0:
+    if debug:
         print 'DeviceChangeEvent'
         print 'deviceId:', deviceId
         print 'changeEvent:', changeEvent
@@ -320,10 +330,12 @@ def deviceChangeEvent(deviceId, changeEvent, changeType, callbackId, context):
             f(deviceId, changeEvent, changeType, callbackId)
         except:
             print 'Error calling registered callback for deviceChangeEvent'
+            if debug:
+                raise
 
 
 def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, context):
-    if 0:
+    if debug:
         print 'SensorEvent'
         print 'protocol:', protocol
         print 'model:', model
@@ -340,9 +352,11 @@ def sensorEvent(protocol, model, id, dataType, value, timestamp, callbackId, con
             f(protocol, model, id, dataType, value, timestamp, callbackId)
         except:
             print 'Error calling registered callback for sensorEvent'
+            if debug:
+                raise
 
 def rawDeviceEvent(data, controllerId, callbackId, context):
-    if 0:
+    if debug:
         print 'RawDeviceEvent'
         print 'data:', data
         print 'controllerId:', controllerId
@@ -355,24 +369,41 @@ def rawDeviceEvent(data, controllerId, callbackId, context):
             f(data, controllerId, callbackId)
         except:
             print 'Error calling registered callback for rawDeviceEvent'
+            if debug:
+                raise
+
 
 device_func = DEVICEFUNC(deviceEvent)
-tdlib.tdRegisterDeviceEvent(device_func, 0)
+_callbackFuncs['device'] = device_func
 
 deviceChange_func = DEVICECHANGEFUNC(deviceChangeEvent)
-tdlib.tdRegisterDeviceChangeEvent(deviceChange_func, 0)
+_callbackFuncs['deviceChange'] = deviceChange_func
 
 sensor_func = SENSORFUNC(sensorEvent)
-tdlib.tdRegisterSensorEvent(sensor_func, 0)
-
+_callbackFuncs['sensor'] = sensor_func
+    
 rawDevice_func = RAWDEVICEFUNC(rawDeviceEvent)
-tdlib.tdRegisterRawDeviceEvent(rawDevice_func, 0)
+_callbackFuncs['raw'] = rawDevice_func
 
-tdlib.tdInit()
 
 def registerEvent(func, eventType):
 
     global callbacks
+    if len(callbacks[eventType]) == 0:
+        #if first registration of this type of callback
+        # register the handler
+        if eventType == 'deviceEvent':
+            _callbackFuncs['deviceCallbackId'] = tdlib.tdRegisterDeviceEvent(_callbackFuncs['device'], 0)
+        elif eventType == 'deviceChangeEvent':
+            _callbackFuncs['deviceChangeCallbackId'] = tdlib.tdRegisterDeviceChangeEvent(_callbackFuncs['deviceChange'], 0)
+        elif eventType == 'sensorEvent':
+            _callbackFuncs['sensorCallbackId'] = tdlib.tdRegisterSensorEvent(_callbackFuncs['sensor'], 0)
+        elif eventType == 'rawDeviceEvent':
+            _callbackFuncs['rawCallbackId'] = tdlib.tdRegisterRawDeviceEvent(_callbackFuncs['raw'], 0)
+        else:
+            print 'Unknown event type', eventType
+
+        
     callbacks[eventType][callbacks['lastAdd']] = func
 
     id = callbacks['lastAdd']
@@ -397,12 +428,27 @@ def unregisterCallback(callbackId):
     
     if callbackId in callbacks['deviceEvent']:
         del callbacks['deviceEvent'][callbackId]
+        if len(callbacks['deviceEvent']) == 0:
+            tdlib.tdUnregisterCallback(_callbackFuncs['deviceCallbackId'])
+            del _callbackFuncs['deviceCallbackId']
+            
     elif callbackId in callbacks['deviceChangeEvent']:
         del callbacks['deviceChangeEvent'][callbackId]
+        if len(callbacks['deviceChangeEvent']) == 0:
+            tdlib.tdUnregisterCallback(_callbackFuncs['deviceChangeCallbackId'])
+            del _callbackFuncs['deviceChangeCallbackId']
+
     elif callbackId in callbacks['sensorEvent']:
         del callbacks['sensorEvent'][callbackId]
+        if len(callbacks['sensorEvent']) == 0:
+            tdlib.tdUnregisterCallback(_callbackFuncs['sensorCallbackId'])
+            del _callbackFuncs['sensorCallbackId']
+
     elif callbackId in callbacks['rawDeviceEvent']:
         del callbacks['rawDeviceEvent'][callbackId]
+        if len(callbacks['rawDeviceEvent']) == 0:
+            tdlib.tdUnregisterCallback(_callbackFuncs['rawCallbackId'])
+            del _callbackFuncs['rawCallbackId']
 
 
 def setProtocol(intDeviceId, strProtocol):

@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    #td.init( methodsSupported = td.TELLSTICK_TURNON | td.TELLSTICK_TURNOFF ) #Application can configure to support different methods
+    td.init( defaultMethods = td.TELLSTICK_TURNON | td.TELLSTICK_TURNOFF ) #Application can configure to support different methods
 #    td.init()
 
     if options.on != None and options.off == None and options.bell == None and options.list == False and options.dim == None and options.learn == None and options.event == False:
@@ -192,18 +192,19 @@ if __name__ == '__main__':
         #
         #  Event
         #
-        
-        res = td.registerDeviceEvent(myDeviceEvent)
-        print 'Register device event returned:', res
+        cbId = []
 
-        res = td.registerDeviceChangedEvent(myDeviceChangeEvent)
-        print 'Register device changed event returned:', res
+        cbId.append(td.registerDeviceEvent(myDeviceEvent))
+        print 'Register device event returned:', cbId[-1]
 
-        res = td.registerRawDeviceEvent(myRawDeviceEvent)
-        print 'Register raw device event returned:', res
+        cbId.append(td.registerDeviceChangedEvent(myDeviceChangeEvent))
+        print 'Register device changed event returned:', cbId[-1]
 
-        res = td.registerSensorEvent(mySensorEvent)
-        print 'Register sensor event returned:', res
+        cbId.append(td.registerRawDeviceEvent(myRawDeviceEvent))
+        print 'Register raw device event returned:', cbId[-1]
+
+        cbId.append(td.registerSensorEvent(mySensorEvent))
+        print 'Register sensor event returned:', cbId[-1]
 
         print 'Event handlers registered now waiting for events. Exit with ctrl-c.'
             
@@ -212,6 +213,8 @@ if __name__ == '__main__':
                 time.sleep(1)
         except KeyboardInterrupt:
             print 'KeyboardInterrupt received, exiting'
+            for i in cbId:
+                td.unregisterCallback(i)
 
     else:
         parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn, -event")
