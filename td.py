@@ -265,6 +265,28 @@ def getModel(intDeviceId):
 
     return s
 
+def getDeviceParameter(intDeviceId, strName, defaultValue):
+    if not isinstance(intDeviceId, int):
+        raise ValueError('intDeviceId needs to be an integer')
+    if not isinstance(strName, str):
+        raise ValueError('strName needs to be a str')
+    if not isinstance(defaultValue, str):
+        raise ValueError('defaultValue needs to be a str')
+
+
+    tdGetDeviceParameterFunc = tdlib.tdGetDeviceParameter
+    tdGetDeviceParameterFunc.restype = c_void_p
+
+    vp = tdGetDeviceParameterFunc(intDeviceId, strName, defaultValue)
+    cp = c_char_p(vp)
+    s = cp.value
+    
+    if (platform.system() != 'Darwin'): #Workaround:
+        tdlib.tdReleaseString(vp)
+
+    return s
+
+
 def init(defaultMethods = 0):
 #defaultMethods could be one or many from: TELLSTICK_TURNON | TELLSTICK_TURNOFF | TELLSTICK_BELL | TELLSTICK_TOGGLE | TELLSTICK_DIM | TELLSTICK_LEARN | TELLSTICK_EXECUTE | TELLSTICK_UP | TELLSTICK_DOWN | TELLSTICK_STOP
 
@@ -487,18 +509,19 @@ if __name__ == '__main__':
         print devId, getName(devId), methods(devId)
 
 
-    print 'Methods(1)', methods(1)
-    print 'methods(1, readable=True)', methods(1, readable = True)
-    print 'methods(3124, readable=True)', methods(3124, readable = True)
-    print 'TurnOn(1)', turnOn(1)
-    time.sleep(1)
-    print 'TurnOff(1)', turnOff(1)
-    time.sleep(1)
-    print 'Dim (1, 121)', dim(1, 121)
+    if 0:
+        print 'Methods(1)', methods(1)
+        print 'methods(1, readable=True)', methods(1, readable = True)
+        print 'methods(3124, readable=True)', methods(3124, readable = True)
+        print 'TurnOn(1)', turnOn(1)
+        time.sleep(1)
+        print 'TurnOff(1)', turnOff(1)
+        time.sleep(1)
+        print 'Dim (1, 121)', dim(1, 121)
     
-    print 'LastSentCommand(1)', lastSentCommand(1)
-    print 'LastSentValue(1)', lastSentValue(1)
-    print 'GetErrorString(-2)', getErrorString(-2)
+        print 'LastSentCommand(1)', lastSentCommand(1)
+        print 'LastSentValue(1)', lastSentValue(1)
+        print 'GetErrorString(-2)', getErrorString(-2)
         
     print 'getDeviceIdFromStr', getDeviceIdFromStr('2')    
     print 'getDeviceIdFromStr', getDeviceIdFromStr('Vardagsrum')
@@ -525,10 +548,21 @@ if __name__ == '__main__':
         print 'getDeviceParameter (house)', repr(getDeviceParameter(devId, "house", ""))
         print 'setDeviceParameter (house)', repr(setDeviceParameter(devId, "house", "321"))
         print 'getDeviceParameter (house)', repr(getDeviceParameter(devId, "house", ""))
+
+        print '\n\nId\tName'
+        for i in range(getNumberOfDevices()):
+            devId = getDeviceId(i)
+            print devId, getName(devId), methods(devId)
     
         print 'Remove Device', removeDevice(devId)
 
     else:
         print 'addDevice returned error', getErrorString(devId)
+
+    print '\n\nId\tName'
+    for i in range(getNumberOfDevices()):
+        devId = getDeviceId(i)
+        print devId, getName(devId), methods(devId)
+
 
     print 'Done with unit test'
