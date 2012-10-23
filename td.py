@@ -125,7 +125,7 @@ def getDeviceId(i):
 def getDeviceIdFromStr(s):
     try:
         id = int(s)
-        devId = getDeviceId(devId)
+        devId = getDeviceId(id)
         return devId, getName(devId)
     except:
         pass
