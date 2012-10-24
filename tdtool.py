@@ -35,6 +35,15 @@ def mySensorEvent(protocol, model, id, dataType, value, timestamp, callbackId):
     print '  value: %s' %(value)
     print '  timestamp: %d' %(timestamp)
 
+def getDeviceIdAndName(input):
+    if (input.isdigit()):
+        deviceId = int(input)
+        deviceName = td.getName(int(input))
+    else:
+        deviceId, deviceName = td.getDeviceIdFromStr(input)
+
+    return deviceId, deviceName
+
 
 if __name__ == '__main__':
     usage = "Support one of the following arguments (except --dimlevel that is allways allowed but ignored in all other cases than combined with --dim)."
@@ -76,7 +85,7 @@ if __name__ == '__main__':
         #   ON
         #
                     
-        deviceId, deviceName = td.getDeviceIdFromStr(options.on)
+        deviceId, deviceName = getDeviceIdAndName(options.on)
         if deviceId == -1:
             parser.error('unknown device: ' + options.on) 
 
@@ -96,7 +105,8 @@ if __name__ == '__main__':
         #   OFF
         #
                     
-        deviceId, deviceName = td.getDeviceIdFromStr(options.off)
+        deviceId, deviceName = getDeviceIdAndName(options.off)
+        
         if deviceId == -1:
             parser.error('unknown device: ' + options.off) 
 
@@ -115,7 +125,7 @@ if __name__ == '__main__':
         #   BELL
         #
                     
-        deviceId, deviceName = td.getDeviceIdFromStr(options.bell)
+        deviceId, deviceName = getDeviceIdAndName(options.bell)
         if deviceId == -1:
             parser.error('unknown device: ' + options.bell) 
 
@@ -136,10 +146,11 @@ if __name__ == '__main__':
 
         print 'Number of devices:', td.getNumberOfDevices()
         for i in range(td.getNumberOfDevices()):
-            cmd = td.lastSentCommand(i, readable = True)
+            deviceId = td.getDeviceId(i)
+            cmd = td.lastSentCommand(deviceId, readable = True)
             if cmd == 'DIM':
                 cmd += ':' + str(td.lastSentValue(i))
-            print td.getDeviceId(i), '\t', td.getName(i), '\t\t', cmd, '\t\t', td.methods(i, readable = True)
+            print deviceId, '\t', td.getName(deviceId), '\t\t', cmd, '\t\t', td.methods(deviceId, readable = True)
         print ''
 
     elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim != None and options.dimlevel != None and options.learn == None and options.event == False:
@@ -156,7 +167,7 @@ if __name__ == '__main__':
         if dimlevel < 0 or dimlevel > 255:
             parser.error('--dimlevel LEVEL needs to be an integer and 0-255')
                     
-        deviceId, deviceName = td.getDeviceIdFromStr(options.dim)
+        deviceId, deviceName = getDeviceIdAndName(options.dim)
         if deviceId == -1:
             parser.error('unknown device: ' + options.dim) 
 
@@ -175,7 +186,7 @@ if __name__ == '__main__':
         #   LEARN
         #
                     
-        deviceId, deviceName = td.getDeviceIdFromStr(options.learn)
+        deviceId, deviceName = getDeviceIdAndName(options.learn)
         if deviceId == -1:
             parser.error('unknown device: ' + options.learn) 
 

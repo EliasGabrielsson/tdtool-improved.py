@@ -125,7 +125,7 @@ def getDeviceId(i):
 def getDeviceIdFromStr(s):
     try:
         id = int(s)
-        devId = getDeviceId(devId)
+        devId = getDeviceId(id)
         return devId, getName(devId)
     except:
         pass
@@ -298,6 +298,8 @@ def init(defaultMethods = 0):
     if (platform.system() == 'Windows'):
     #Windows
         tdlib = windll.LoadLibrary('TelldusCore.dll') #import our library
+    elif (platform.system() == 'Darwin'):
+        tdlib = cdll.LoadLibrary('/Library/Frameworks/TelldusCore.framework/TelldusCore')
     else:
     #Linux
         tdlib = cdll.LoadLibrary('libtelldus-core.so.2') #import our library
