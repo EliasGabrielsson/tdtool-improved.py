@@ -148,16 +148,18 @@ if __name__ == '__main__':
         print 'Number of devices:', td.getNumberOfDevices()
         for i in range(td.getNumberOfDevices()):
             deviceId = td.getDeviceId(i)
-            cmd = td.lastSentCommand(deviceId, readable = True)
-            if cmd == 'DIM':
-                cmd += ':' + str(td.lastSentValue(i))
-            print deviceId, '\t', td.getName(deviceId), '\t\t', cmd, '\t\t', td.methods(deviceId, readable = True)
-        print '\nSensors:\n'
-        for s in td.sensors():
+            cmd = td.lastSentCommand(deviceId, methodsSupported = td.TELLSTICK_ALL, readable = True)
+            value = td.lastSentValue(deviceId)
+            if value:
+                value = " (%s)" % value
+            print deviceId, '\t', td.getName(deviceId), '\t\t', cmd, value, '\t\t', td.methods(deviceId, methodsSupported = td.TELLSTICK_ALL, readable = True)
+        sensors = td.sensors()
+        print '\nNumber of sensors:', len(sensors)
+        for s in sensors:
             print "Sensor: %-40s %-11s: %12s %s" % ("%s.%s.%s" % (s.protocol, s.model, s.id),
                                                     td.sensorValueTypeReadable[s.dataType] or "Unknown", s.value, 
                                                     datetime.fromtimestamp(s.timestamp).strftime('%Y-%m-%d %H:%M:%S'))
-        print ''
+        print '\n'
 
 
     elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim != None and options.dimlevel != None and options.learn == None and options.event == False:

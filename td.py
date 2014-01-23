@@ -54,6 +54,7 @@ TELLSTICK_EXECUTE =       64
 TELLSTICK_UP =           128
 TELLSTICK_DOWN =         256
 TELLSTICK_STOP =         512
+TELLSTICK_ALL =        0x3FF
 
 methodsReadable = {1: 'ON',
                    2: 'OFF',
@@ -198,14 +199,10 @@ def lastSentCommand(intDeviceId, methodsSupported = None, readable = False):
 
     return tdlib.tdLastSentCommand(intDeviceId, methodsSupported)
 
-def lastSentValue(intDeviceId):
+def lastSentValue(id_):
     func = tdlib.tdLastSentValue
     func.restype = c_char_p
-
-    ret = func(intDeviceId)
-    
-#Release string here?
-    return ret
+    return func(id_)
 
 def getErrorString(intErrorNo):
     getErrorStringFunc = tdlib.tdGetErrorString
@@ -518,14 +515,12 @@ class Sensor(object):
 def sensors():
     """ returns all sensors in an array """
     sensors = []
-    protocollen = c_int(256)
-    protocol = create_string_buffer(256)
-    modellen = c_int(256)
-    model = create_string_buffer(256)
+    LEN = 256
+    protocol = create_string_buffer(LEN)
+    model = create_string_buffer(LEN)
     id_ = c_int()
     dataTypes = c_int()
-    rv = tdlib.tdSensor(protocol, protocollen, model, modellen, byref(id_), byref(dataTypes))
-    while rv == 0:
+    while 0 == tdlib.tdSensor(protocol, LEN, model, LEN, byref(id_), byref(dataTypes)):
         for i in range(0,32):
             dataType = 1 << i
             if dataTypes.value & dataType:
@@ -534,7 +529,6 @@ def sensors():
                 timestamp = c_int()
                 tdlib.tdSensorValue(protocol, model, id_, dataType, value, valuelen, byref(timestamp))
                 sensors.append(Sensor(protocol.value, model.value, id_.value, dataType, value.value, timestamp.value))
-        rv = tdlib.tdSensor(protocol, protocollen, model, modellen, byref(id_), byref(dataTypes))
     return sensors
 
 
