@@ -228,7 +228,7 @@ if __name__ == '__main__':
                 td.unregisterCallback(i)
 
     else:
-        parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn, -event")
+        parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn, --event")
 
     td.close()
 

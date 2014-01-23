@@ -11,7 +11,8 @@
 # *******************************************
 import platform
 import time
-from ctypes import c_int, c_ubyte, c_void_p, c_char_p, POINTER, string_at
+from ctypes import c_int, c_ubyte, c_void_p, c_char_p, POINTER, string_at,\
+    create_string_buffer, byref
 
 debug = False
 
@@ -496,6 +497,45 @@ def disconnectTellStickController(vid, pid, serial):
 #
 #int tdRegisterControllerEvent( TDControllerEvent eventFunction, void *context);
 #int tdSendRawCommand(const char *command, int reserved);    
+
+
+# additions by jorkar
+class Sensor(object):
+    
+    def __init__(self, protocol, model, id, dataType, value, timestamp):
+        self.protocol = protocol
+        self.model = model
+        self.id = id
+        self.dataType = dataType
+        self.value = value
+        self.timestamp = timestamp
+
+    def __repr__(self):
+        return "Sensor: %s.%s.%s %s value: %s %s" % (self.protocol, self.model, self.id, self.dataType, self.value, self.timestamp)
+
+#    TELLSTICK_API int WINAPI tdSensor(char *protocol, int protocolLen, char *model, int modelLen, int *id, int *dataTypes);
+#    TELLSTICK_API int WINAPI tdSensorValue(const char *protocol, const char *model, int id, int dataType, char *value, int len, int *timestamp);
+def sensors():
+    """ returns all sensors in an array """
+    sensors = []
+    protocollen = c_int(256)
+    protocol = create_string_buffer(256)
+    modellen = c_int(256)
+    model = create_string_buffer(256)
+    id_ = c_int()
+    dataTypes = c_int()
+    rv = tdlib.tdSensor(protocol, protocollen, model, modellen, byref(id_), byref(dataTypes))
+    while rv == 0:
+        for i in range(0,32):
+            dataType = 1 << i
+            if dataTypes.value & dataType:
+                valuelen = c_int(256)
+                value = create_string_buffer(256)
+                timestamp = c_int()
+                tdlib.tdSensorValue(protocol, model, id_, dataType, value, valuelen, byref(timestamp))
+                sensors.append(Sensor(protocol.value, model.value, id_.value, dataType, value.value, timestamp.value))
+        rv = tdlib.tdSensor(protocol, protocollen, model, modellen, byref(id_), byref(dataTypes))
+    return sensors
 
 
 if __name__ == '__main__':
