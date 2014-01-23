@@ -494,9 +494,15 @@ def disconnectTellStickController(vid, pid, serial):
 #
 #int tdRegisterControllerEvent( TDControllerEvent eventFunction, void *context);
 #int tdSendRawCommand(const char *command, int reserved);    
+#    TELLSTICK_API void WINAPI tdConnectTellStickController(int vid, int pid, const char *serial);
+#    TELLSTICK_API void WINAPI tdDisconnectTellStickController(int vid, int pid, const char *serial);
+#
+#    TELLSTICK_API int WINAPI tdController(int *controllerId, int *controllerType, char *name, int nameLen, int *available);
+#    TELLSTICK_API int WINAPI tdControllerValue(int controllerId, const char *name, char *value, int valueLen);
+#    TELLSTICK_API int WINAPI tdSetControllerValue(int controllerId, const char *name, const char *value);
+#    TELLSTICK_API int WINAPI tdRemoveController(int controllerId);
 
 
-# additions by jorkar
 class Sensor(object):
     
     def __init__(self, protocol, model, id, dataType, value, timestamp):
@@ -512,7 +518,7 @@ class Sensor(object):
 
 #    TELLSTICK_API int WINAPI tdSensor(char *protocol, int protocolLen, char *model, int modelLen, int *id, int *dataTypes);
 #    TELLSTICK_API int WINAPI tdSensorValue(const char *protocol, const char *model, int id, int dataType, char *value, int len, int *timestamp);
-def sensors():
+def getSensors():
     """ returns all sensors in an array """
     sensors = []
     LEN = 256
