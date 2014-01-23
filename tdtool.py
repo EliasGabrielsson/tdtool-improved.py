@@ -12,6 +12,7 @@
 import optparse
 import td
 import time
+from datetime import datetime
 
 def myDeviceEvent(deviceId, method, data, callbackId):
     print '%d: DeviceEvent Device: %d - %s' %( time.time(), deviceId, td.getName(deviceId) )
@@ -151,11 +152,17 @@ if __name__ == '__main__':
             if cmd == 'DIM':
                 cmd += ':' + str(td.lastSentValue(i))
             print deviceId, '\t', td.getName(deviceId), '\t\t', cmd, '\t\t', td.methods(deviceId, readable = True)
+        print '\nSensors:\n'
+        for s in td.sensors():
+            print "Sensor: %-40s %-11s: %12s %s" % ("%s.%s.%s" % (s.protocol, s.model, s.id),
+                                                    td.sensorValueTypeReadable[s.dataType] or "Unknown", s.value, 
+                                                    datetime.fromtimestamp(s.timestamp).strftime('%Y-%m-%d %H:%M:%S'))
         print ''
+
 
     elif options.on == None and options.off == None and options.bell == None and options.list == False and options.dim != None and options.dimlevel != None and options.learn == None and options.event == False:
  
-         #
+        #
         #    DIM
         #
 
