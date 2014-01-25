@@ -54,7 +54,6 @@ TELLSTICK_EXECUTE =       64
 TELLSTICK_UP =           128
 TELLSTICK_DOWN =         256
 TELLSTICK_STOP =         512
-TELLSTICK_ALL =        0x3FF
 
 methodsReadable = {1: 'ON',
                    2: 'OFF',
@@ -68,13 +67,24 @@ methodsReadable = {1: 'ON',
                    512: 'STOP'}
 
 
-
 #Sensor value types
-TELLSTICK_TEMPERATURE =    1
-TELLSTICK_HUMIDITY =       2
+TELLSTICK_TEMPERATURE   =   1
+TELLSTICK_HUMIDITY      =   2
+TELLSTICK_RAINRATE      =   4
+TELLSTICK_RAINTOTAL     =   8
+TELLSTICK_WINDDIRECTION =   16
+TELLSTICK_WINDAVERAGE   =   32
+TELLSTICK_WINDGUST      =   64
 
-sensorValueTypeReadable = {TELLSTICK_TEMPERATURE: 'Temperature',
-                           TELLSTICK_HUMIDITY: 'Humidity'}
+
+sensorValueTypeReadable = {TELLSTICK_TEMPERATURE:   'Temperature',
+                           TELLSTICK_HUMIDITY:      'Humidity',
+                           TELLSTICK_RAINRATE:      'Rain rate',
+                           TELLSTICK_RAINTOTAL:     'Rain total',
+                           TELLSTICK_WINDDIRECTION: 'Wind direction',
+                           TELLSTICK_WINDAVERAGE:   'Wind average',
+                           TELLSTICK_WINDGUST:      'Wind gust'
+                           }
 
 #Error codes
 TELLSTICK_SUCCESS =                       0
@@ -199,10 +209,14 @@ def lastSentCommand(intDeviceId, methodsSupported = None, readable = False):
 
     return tdlib.tdLastSentCommand(intDeviceId, methodsSupported)
 
-def lastSentValue(id_):
+def lastSentValue(intDeviceId):
     func = tdlib.tdLastSentValue
     func.restype = c_char_p
-    return func(id_)
+
+    ret = func(intDeviceId)
+    
+#Release string here?
+    return ret
 
 def getErrorString(intErrorNo):
     getErrorStringFunc = tdlib.tdGetErrorString
@@ -494,15 +508,9 @@ def disconnectTellStickController(vid, pid, serial):
 #
 #int tdRegisterControllerEvent( TDControllerEvent eventFunction, void *context);
 #int tdSendRawCommand(const char *command, int reserved);    
-#    TELLSTICK_API void WINAPI tdConnectTellStickController(int vid, int pid, const char *serial);
-#    TELLSTICK_API void WINAPI tdDisconnectTellStickController(int vid, int pid, const char *serial);
-#
-#    TELLSTICK_API int WINAPI tdController(int *controllerId, int *controllerType, char *name, int nameLen, int *available);
-#    TELLSTICK_API int WINAPI tdControllerValue(int controllerId, const char *name, char *value, int valueLen);
-#    TELLSTICK_API int WINAPI tdSetControllerValue(int controllerId, const char *name, const char *value);
-#    TELLSTICK_API int WINAPI tdRemoveController(int controllerId);
 
 
+# additions by jorkar
 class Sensor(object):
     
     def __init__(self, protocol, model, id, dataType, value, timestamp):
@@ -518,15 +526,17 @@ class Sensor(object):
 
 #    TELLSTICK_API int WINAPI tdSensor(char *protocol, int protocolLen, char *model, int modelLen, int *id, int *dataTypes);
 #    TELLSTICK_API int WINAPI tdSensorValue(const char *protocol, const char *model, int id, int dataType, char *value, int len, int *timestamp);
-def getSensors():
+def sensors():
     """ returns all sensors in an array """
     sensors = []
-    LEN = 256
-    protocol = create_string_buffer(LEN)
-    model = create_string_buffer(LEN)
+    protocollen = c_int(256)
+    protocol = create_string_buffer(256)
+    modellen = c_int(256)
+    model = create_string_buffer(256)
     id_ = c_int()
     dataTypes = c_int()
-    while 0 == tdlib.tdSensor(protocol, LEN, model, LEN, byref(id_), byref(dataTypes)):
+    rv = tdlib.tdSensor(protocol, protocollen, model, modellen, byref(id_), byref(dataTypes))
+    while rv == 0:
         for i in range(0,32):
             dataType = 1 << i
             if dataTypes.value & dataType:
@@ -535,6 +545,7 @@ def getSensors():
                 timestamp = c_int()
                 tdlib.tdSensorValue(protocol, model, id_, dataType, value, valuelen, byref(timestamp))
                 sensors.append(Sensor(protocol.value, model.value, id_.value, dataType, value.value, timestamp.value))
+        rv = tdlib.tdSensor(protocol, protocollen, model, modellen, byref(id_), byref(dataTypes))
     return sensors
 
 
