@@ -153,7 +153,7 @@ if __name__ == '__main__':
             if value:
                 value = " (%s)" % value
             print deviceId, '\t', td.getName(deviceId), '\t\t', cmd, value, '\t\t', td.methods(deviceId, methodsSupported = td.TELLSTICK_ALL, readable = True)
-        sensors = td.getSensors()
+        sensors = td.sensors()
         print '\nNumber of sensors:', len(sensors)
         for s in sensors:
             print "Sensor: %-40s %-11s: %12s %s" % ("%s.%s.%s" % (s.protocol, s.model, s.id),
