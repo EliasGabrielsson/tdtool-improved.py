@@ -68,14 +68,24 @@ methodsReadable = {1: 'ON',
                    512: 'STOP'}
 
 
-
 #Sensor value types
-TELLSTICK_TEMPERATURE =    1
-TELLSTICK_HUMIDITY =       2
+TELLSTICK_TEMPERATURE   =   1
+TELLSTICK_HUMIDITY      =   2
+TELLSTICK_RAINRATE      =   4
+TELLSTICK_RAINTOTAL     =   8
+TELLSTICK_WINDDIRECTION =   16
+TELLSTICK_WINDAVERAGE   =   32
+TELLSTICK_WINDGUST      =   64
 
-sensorValueTypeReadable = {TELLSTICK_TEMPERATURE: 'Temperature',
-                           TELLSTICK_HUMIDITY: 'Humidity'}
 
+sensorValueTypeReadable = {TELLSTICK_TEMPERATURE:   'Temperature',
+                           TELLSTICK_HUMIDITY:      'Humidity',
+                           TELLSTICK_RAINRATE:      'Rain rate',
+                           TELLSTICK_RAINTOTAL:     'Rain total',
+                           TELLSTICK_WINDDIRECTION: 'Wind direction',
+                           TELLSTICK_WINDAVERAGE:   'Wind average',
+                           TELLSTICK_WINDGUST:      'Wind gust'
+                           }
 #Error codes
 TELLSTICK_SUCCESS =                       0
 TELLSTICK_ERROR_NOT_FOUND =              -1
