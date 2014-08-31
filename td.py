@@ -33,7 +33,7 @@ else:
         from ctypes import cdll, CFUNCTYPE
         tdlib = cdll.LoadLibrary('/Library/Frameworks/TelldusCore.framework/TelldusCore')
     else:
-    #Linux
+    #Others; if not found, try adding the directory with the file to env var LD_LIBRARY_PATH
         from ctypes import cdll, CFUNCTYPE
         tdlib = cdll.LoadLibrary('libtelldus-core.so.2')
 
@@ -301,19 +301,7 @@ def init(defaultMethods = 0):
 
     methodsSupportedDefault = defaultMethods
 
-
-    if (platform.system() == 'Windows'):
-    #Windows
-        tdlib = windll.LoadLibrary('TelldusCore.dll') #import our library
-    elif (platform.system() == 'Darwin'):
-        tdlib = cdll.LoadLibrary('/Library/Frameworks/TelldusCore.framework/TelldusCore')
-    else:
-    #Linux
-        tdlib = cdll.LoadLibrary('libtelldus-core.so.2') #import our library
-
     tdlib.tdInit()
-
-
 
 
 def close():
