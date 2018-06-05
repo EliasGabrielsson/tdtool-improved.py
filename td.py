@@ -1,14 +1,17 @@
+#!/usr/bin/env python
+
 # ******************************************
 #
 # Python wrapper for libtelldus on Linux
 #
 # Developed by David Karlsson
-#             (david.karlsson.80@gmail.com)
+# (david.karlsson.80@gmail.com)
 #
 # Released as is without any garantees on
 # functionality.
 #
 # *******************************************
+
 import platform
 import time
 from ctypes import c_int, c_ubyte, c_void_p, c_char_p, POINTER, string_at,\

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # ******************************************
 #
 # Example usage of td.py that mimic tdtool
@@ -9,6 +11,7 @@
 # functionality.
 #
 # *******************************************
+
 import optparse
 import td
 import time
@@ -240,6 +243,3 @@ if __name__ == '__main__':
         parser.error("Can only handle one of --on, --off, --bell, --list, --dim, --learn, --event")
 
     td.close()
-
-
-
